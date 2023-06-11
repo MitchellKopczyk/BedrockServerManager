@@ -7,7 +7,7 @@ The goal of this project is just to make it easier to manage your own dedicated 
 Ubuntu/Linux for now, theoretically any system could be implemented.
 
 ## How does it work?
-Be sure to have Beautiful Soup installed via pip.
+Be sure to install all dependencies if you get errors with pip
 
 Clone the BedrockServerManager to a fixed location on your filesystem, if you move it you will have issues. Run all scripts as sudo or root and from the root of the BedrockServerManager directory. Backup up your server software/worlds manually every once in while!
 
