@@ -2,10 +2,8 @@ import ssl
 import urllib.request
 import zipfile
 import json
-import requests
 import os
 import shutil
-from bs4 import BeautifulSoup
 
 def download_stream(url) :
     context = ssl.create_default_context()
@@ -46,38 +44,44 @@ def compare_versions(v1, v2) :
         return False
     
 def get_latest_ver_info(serverType):
+
+    version_urls = {
+        0: "https://raw.githubusercontent.com/Mojang/bedrock-samples/main/version.json",
+        1: "https://raw.githubusercontent.com/Mojang/bedrock-samples/preview/version.json"
+    }
+
     download_urls = {
         0: "https://minecraft.azureedge.net/bin-win/bedrock-server-",
         1: "https://minecraft.azureedge.net/bin-linux/bedrock-server-",
         2: "https://minecraft.azureedge.net/bin-win-preview/bedrock-server-",
         3: "https://minecraft.azureedge.net/bin-linux-preview/bedrock-server-"
     }
+
     download_url = download_urls[serverType]
 
-    url = 'https://minecraft.fandom.com/api.php'
-    params = {
-        'action': 'parse',
-        'page': 'Bedrock_Dedicated_Server',
-        'format': 'json'
-    }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-    page_content = data['parse']['text']['*']
-    soup = BeautifulSoup(page_content, 'html.parser')
-
-    if serverType in [0, 1]:
-        table = soup.find_all('table', {'class': 'mw-collapsible mw-collapsed wikitable'})[0]
+    if(serverType == 0 or serverType == 1):
+        version_url = version_urls[0]
     else:
-        table = soup.find_all('table', {'class': 'mw-collapsible mw-collapsed wikitable'})[1]
+        version_url = version_urls[1]
 
-    rows = table.find_all('tr')
+
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    response = urllib.request.urlopen(version_url, context=context)
+
+    data = json.loads(response.read())
+    version = data["latest"]["version"]
+
+    last_digit = version.split(".")[-1]
+
+    if int(last_digit) in range(0, 10):
+        version = ".".join(version.split(".")[:-1]) + ".0" + last_digit
+        print("VERSINON " + version)
 
     ver_info = dict()
-    for row in rows:
-        version = row.find('th').text.strip()
-        ver_info['version'] = version
-        ver_info['download_url'] = download_url + version + ".zip"
+    ver_info['version'] = version
+    ver_info['download_url'] = download_url + version + ".zip"
 
     ver_JSON = json.dumps(ver_info)
     return ver_JSON
