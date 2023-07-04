@@ -1,10 +1,11 @@
-import json
 import utils
 import os
+import json
 
 config = utils.load_json_file("config.json")
 server_path = config["ServerPath"]
 flavor = config["Flavor"]
+dir_name = "bedrock-server"
 
 if flavor in utils.flavors:
     flavor_choice = utils.flavors[flavor]
@@ -20,10 +21,11 @@ if found:
     print("A server already exists!")
 else:
     print("Searching for latest version...") 
+    capture_ver = utils.get_latest_version_info(flavor_choice)
+    version_info = json.loads(capture_ver)
+    version_value = version_info['version']
+    download_url = version_info['download_url']
 
-    capture_ver = json.loads(utils.get_latest_ver_info(flavor_choice))
-    download_url = capture_ver["download_url"]
-    version_value = capture_ver["version"]
     print(f"Attempting to download version {version_value}...")
     print("Downloading...")
     try:

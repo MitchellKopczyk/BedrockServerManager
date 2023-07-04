@@ -2,10 +2,79 @@ import ssl
 import urllib.request
 import zipfile
 import json
-import requests
 import os
 import shutil
-from bs4 import BeautifulSoup
+import re
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+def load_json_file(src):
+    with open(src, "r") as f :
+        return json.load(f)
+    
+config = load_json_file("config.json")
+server_path = config["ServerPath"]
+dir_name = "bedrock-server"
+
+def get_version_number(url):
+    pattern = r'bedrock-server-(\d+\.\d+\.\d+\.\d+)\.zip'
+    match = re.search(pattern, url)
+    if match:
+        return match.group(1)
+    else:
+        return None
+    
+def get_latest_version_info(serverType):
+    url = 'https://www.minecraft.net/en-us/download/server/bedrock'
+    options = webdriver.ChromeOptions()
+    options.add_argument('--log-level=3')
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+
+    grabbed_urls = []
+    grabbed_platforms = []
+
+    links = driver.find_elements(By.XPATH, "//a[@data-platform]")
+
+    for link in links:
+        grabbed_urls.append(link.get_attribute('href'))
+        grabbed_platforms.append(link.get_attribute('data-platform'))
+
+    driver.quit()
+
+    infoDict = dict()
+    infoDict['version'] = get_version_number(grabbed_urls[serverType])
+    infoDict['download_url'] = grabbed_urls[serverType]
+    infoJSON = json.dumps(infoDict)
+    return infoJSON
+
+def get_latest_version_info_to_file(serverType):
+    url = 'https://www.minecraft.net/en-us/download/server/bedrock'
+    options = webdriver.ChromeOptions()
+    options.add_argument('--log-level=3')
+    driver = webdriver.Chrome(options=options)
+    driver.get(url)
+
+    grabbed_urls = []
+    grabbed_platforms = []
+
+    links = driver.find_elements(By.XPATH, "//a[@data-platform]")
+
+    for link in links:
+        grabbed_urls.append(link.get_attribute('href'))
+        grabbed_platforms.append(link.get_attribute('data-platform'))
+
+    driver.quit()
+
+    infoDict = dict()
+    infoDict['version'] = get_version_number(grabbed_urls[serverType])
+    infoDict['download_url'] = grabbed_urls[serverType]
+    infoJSON = json.dumps(infoDict)
+    write_to_json(infoJSON, os.path.dirname(__file__) + os.path.sep + 'current_version.json')
 
 def download_stream(url) :
     context = ssl.create_default_context()
@@ -22,9 +91,6 @@ def unzip(src, dst) :
     with zipfile.ZipFile(src, "r") as z:
         z.extractall(dst)
 
-def load_json_file(src):
-    with open(src, "r") as f :
-        return json.load(f)
 
 def write_to_json(data, dst):
     with open(dst, "w") as outfile :
@@ -45,43 +111,6 @@ def compare_versions(v1, v2) :
     else:
         return False
     
-def get_latest_ver_info(serverType):
-    download_urls = {
-        0: "https://minecraft.azureedge.net/bin-win/bedrock-server-",
-        1: "https://minecraft.azureedge.net/bin-linux/bedrock-server-",
-        2: "https://minecraft.azureedge.net/bin-win-preview/bedrock-server-",
-        3: "https://minecraft.azureedge.net/bin-linux-preview/bedrock-server-"
-    }
-    download_url = download_urls[serverType]
-
-    url = 'https://minecraft.fandom.com/api.php'
-    params = {
-        'action': 'parse',
-        'page': 'Bedrock_Dedicated_Server',
-        'format': 'json'
-    }
-
-    response = requests.get(url, params=params)
-    data = response.json()
-    page_content = data['parse']['text']['*']
-    soup = BeautifulSoup(page_content, 'html.parser')
-
-    if serverType in [0, 1]:
-        table = soup.find_all('table', {'class': 'mw-collapsible mw-collapsed wikitable'})[0]
-    else:
-        table = soup.find_all('table', {'class': 'mw-collapsible mw-collapsed wikitable'})[1]
-
-    rows = table.find_all('tr')
-
-    ver_info = dict()
-    for row in rows:
-        version = row.find('th').text.strip()
-        ver_info['version'] = version
-        ver_info['download_url'] = download_url + version + ".zip"
-
-    ver_JSON = json.dumps(ver_info)
-    return ver_JSON
-
 flavors = {
     "Windows": 0,
     "Linux": 1,
@@ -89,39 +118,39 @@ flavors = {
     "PreviewLinux": 3
 }
 
+def print_backup(value):
+    print("Backing up %s..." % (value,))
+
+def print_restore(value):
+    print("Restoring %s..." % (value,))
+
 def backup(server_path, dir_name, backup_path):
     if not os.path.exists(backup_path):
         os.makedirs(backup_path)
 
     if os.path.exists(server_path + dir_name + os.path.sep + "worlds"):
         shutil.copytree(server_path + dir_name + os.path.sep + "worlds", backup_path + os.path.sep + "worlds")
-    else:
-        print("The directory does not exist.")
+        print_backup("worlds")
 
     if os.path.exists(server_path + dir_name + os.path.sep + "resource_packs"):
         shutil.copytree(server_path + dir_name + os.path.sep + "resource_packs", backup_path + os.path.sep + "resource_packs")
-    else:
-        print("The directory does not exist.")
+        print_backup("resource_packs")
 
     if os.path.exists(server_path + dir_name + os.path.sep + "behavior_packs"):
         shutil.copytree(server_path + dir_name + os.path.sep + "behavior_packs", backup_path + os.path.sep + "behavior_packs")
-    else:
-        print("The directory does not exist.")
+        print_backup("behavior_packs")
 
     if os.path.exists(server_path + dir_name + os.path.sep + "server.properties"):
         shutil.copy(server_path + dir_name + os.path.sep + "server.properties", backup_path)
-    else:
-        print("The file does not exist.")
+        print_backup("server.properties")
 
     if os.path.exists(server_path + dir_name + os.path.sep + "allowlist.json"):
         shutil.copy(server_path + dir_name + os.path.sep + "allowlist.json", backup_path)
-    else:
-        print("The file does not exist.")
+        print_backup("allowlist.json")
 
     if os.path.exists(server_path + dir_name + os.path.sep + "permissions.json"):
         shutil.copy(server_path + dir_name + os.path.sep + "permissions.json", backup_path)
-    else:
-        print("The file does not exist.")
+        print_backup("permissions.json")
         
 def restore(server_path, dir_name, backup_path):
     if not os.path.exists(backup_path):
@@ -131,32 +160,36 @@ def restore(server_path, dir_name, backup_path):
     try:
         if os.path.exists(server_path + dir_name + os.path.sep + "worlds"):
             shutil.rmtree(server_path + dir_name + os.path.sep + "worlds")
+
         if os.path.exists(backup_path + os.path.sep + "worlds"):
             shutil.copytree(backup_path + os.path.sep + "worlds", server_path + dir_name + os.path.sep + "worlds")
+            print_restore("worlds")
 
         if os.path.exists(server_path + dir_name + os.path.sep + "resource_packs"):
             shutil.rmtree(server_path + dir_name + os.path.sep + "resource_packs")
+
         if os.path.exists(backup_path + os.path.sep + "resource_packs"):
             shutil.copytree(backup_path + os.path.sep + "resource_packs", server_path + dir_name + os.path.sep + "resource_packs")
+            print_restore("resource_packs")
 
         if os.path.exists(server_path + dir_name + os.path.sep + "behavior_packs"):
             shutil.rmtree(server_path + dir_name + os.path.sep + "behavior_packs")
+
         if os.path.exists(backup_path + os.path.sep + "behavior_packs"):
             shutil.copytree(backup_path + os.path.sep + "behavior_packs", server_path + dir_name + os.path.sep + "behavior_packs")
+            print_restore("behavior_packs")
 
         if os.path.exists(backup_path + os.path.sep + "server.properties"):
             shutil.copy(backup_path + os.path.sep + "server.properties", server_path + dir_name)
-        else:
-            print("The file does not exist.")
+            print_restore("server.properties")
 
         if os.path.exists(backup_path + os.path.sep + "allowlist.json"):
             shutil.copy(backup_path + os.path.sep + "allowlist.json", server_path + dir_name)
-        else:
-            print("The file does not exist.")
+            print_restore("allowlist.json")
 
         if os.path.exists(backup_path + os.path.sep + "permissions.json"):
             shutil.copy(backup_path + os.path.sep + "permissions.json", server_path + dir_name)
-        else:
-            print("The file does not exist.")
+            print_restore("permissions.json")           
+
     except Exception as e:
         print(f"An error occurred: {e}")
