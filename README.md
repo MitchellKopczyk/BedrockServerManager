@@ -25,10 +25,9 @@ Before running the scripts, ensure the following dependencies are installed:
 
 ## Installation
 
-Clone the BedrockServerManager to a fixed location on your filesystem. If you move it, you may encounter issues. Run all scripts as sudo or root from the root of the BedrockServerManager directory. Remember to manually backup your server software/worlds occasionally! Be sure also to do this inital setup from the Server from the GNOME Desktop otherwhise selenium will throw errors.
+Clone the BedrockServerManager to a fixed location on your filesystem. If you move it, you may encounter issues. Run all scripts from the root of the BedrockServerManager directory. Remember to manually backup your server software/worlds occasionally! Be sure also to do this inital setup from the Server from the GNOME Desktop otherwhise selenium will throw errors.
 
 ### Configure the Config File
-
 Modify the config.json, ensuring to include the file separator at the end of ServerPath. Duration is how often you want the server to check for an update.
 
 ```
