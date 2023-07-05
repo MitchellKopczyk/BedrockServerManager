@@ -21,11 +21,11 @@ Before running the scripts, ensure the following dependencies are installed:
 - selenium: Install using pip3: ```pip3 install selenium```
 - chromium: Install using snap: ```sudo snap install chromium```
 - chromedriver: Install using apt: ```sudo apt install chromium-chromedriver -y```
-- Auto User Login: For uninterrupted functionality, the user needs to remain logged in at all times. Configure your system settings to prevent the desktop from going to sleep, as Chrome must run in headed mode to check for updates. For enhanced security, limit the user permissions accordingly.
+- Auto User Login: For uninterrupted functionality, the user needs to remain logged in at all times in the GNOME desktop enviroment. Configure your system settings to prevent the desktop from going to sleep, as Chrome must run in headed mode to check for updates. For enhanced security, limit the user permissions accordingly.
 
 ## Installation
 
-Clone the BedrockServerManager to a fixed location on your filesystem. If you move it, you may encounter issues. Run all scripts as sudo or root from the root of the BedrockServerManager directory. Remember to manually backup your server software/worlds occasionally!
+Clone the BedrockServerManager to a fixed location on your filesystem. If you move it, you may encounter issues. Run all scripts as sudo or root from the root of the BedrockServerManager directory. Remember to manually backup your server software/worlds occasionally! Be sure also to do this inital setup from the Server from the GNOME Desktop otherwhise selenium will throw errors.
 
 ### Configure the Config File
 
